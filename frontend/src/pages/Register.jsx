@@ -66,6 +66,14 @@ export default function Register() {
       setError("Please fill in all fields."); return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) { setError("Please enter a valid email."); return; }
+
+    // Phone validation — Sri Lanka format
+    const cleanPhone = phone.replace(/\s+/g, "");
+    const sriLankaPhone = /^(\+94[0-9]{9}|0[0-9]{9})$/;
+    if (!sriLankaPhone.test(cleanPhone)) {
+      setError("Enter a valid Sri Lanka phone number (e.g. 0771234567 or +94771234567)"); return;
+    }
+
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (password !== confirm) { setError("Passwords do not match."); return; }
     if (isAdmin && !adminCode) { setError("Please enter the admin secret code."); return; }
@@ -136,8 +144,13 @@ export default function Register() {
         {/* Phone */}
         <div style={S.fw}>
           <label style={S.label}>Phone Number</label>
-          <input style={inp("phone")} type="tel" placeholder="0771234567"
-            value={form.phone} onChange={set("phone")} onFocus={focus("phone")} onBlur={blur} />
+          <input style={inp("phone")} type="tel" placeholder="+94 77 123 4567 or 0771234567"
+            value={form.phone}
+            onChange={e => {
+              const val = e.target.value.replace(/[^\d+\s]/g, "");
+              setForm(f => ({ ...f, phone: val }));
+            }}
+            onFocus={focus("phone")} onBlur={blur} maxLength={15} />
         </div>
 
         {/* Password */}
