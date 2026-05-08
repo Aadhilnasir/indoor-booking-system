@@ -117,12 +117,12 @@ export default function Register() {
         <div style={S.row} className="auth-row">
           <div style={S.fw}>
             <label style={S.label}>First Name</label>
-            <input style={inp("firstName")} type="text" placeholder="Aadhil"
+            <input style={inp("firstName")} type="text" placeholder="First name"
               value={form.firstName} onChange={set("firstName")} onFocus={focus("firstName")} onBlur={blur} />
           </div>
           <div style={S.fw}>
             <label style={S.label}>Last Name</label>
-            <input style={inp("lastName")} type="text" placeholder="Nazir"
+            <input style={inp("lastName")} type="text" placeholder="Last name"
               value={form.lastName} onChange={set("lastName")} onFocus={focus("lastName")} onBlur={blur} />
           </div>
         </div>
@@ -130,21 +130,21 @@ export default function Register() {
         {/* Username */}
         <div style={S.fw}>
           <label style={S.label}>Username</label>
-          <input style={inp("username")} type="text" placeholder="aadhilnazir"
+          <input style={inp("username")} type="text" placeholder="Choose a username"
             value={form.username} onChange={set("username")} onFocus={focus("username")} onBlur={blur} />
         </div>
 
         {/* Email */}
         <div style={S.fw}>
           <label style={S.label}>Email</label>
-          <input style={inp("email")} type="email" placeholder="aadhil@email.com"
+          <input style={inp("email")} type="email" placeholder="Your email address"
             value={form.email} onChange={set("email")} onFocus={focus("email")} onBlur={blur} />
         </div>
 
         {/* Phone */}
         <div style={S.fw}>
           <label style={S.label}>Phone Number</label>
-          <input style={inp("phone")} type="tel" placeholder="+94 77 123 4567 or 0771234567"
+          <input style={inp("phone")} type="tel" placeholder="0771234567 or +94771234567"
             value={form.phone}
             onChange={e => {
               const val = e.target.value.replace(/[^\d+\s]/g, "");
@@ -171,7 +171,7 @@ export default function Register() {
           <label style={S.label}>Confirm Password</label>
           <div style={S.passWrap}>
             <input style={{ ...inp("confirm"), paddingRight:44 }} type={showPass2 ? "text" : "password"}
-              placeholder="Repeat password" value={form.confirm}
+              placeholder="Repeat your password" value={form.confirm}
               onChange={set("confirm")} onFocus={focus("confirm")} onBlur={blur} />
             <button style={S.eyeBtn} type="button" onClick={() => setShowPass2(s => !s)}>
               {showPass2 ? <EyeClosed /> : <EyeOpen />}
