@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Facility;
 use App\Models\Booking;
 use App\Models\SlotLock;
+use App\Models\FacilityBlock;
 use Carbon\Carbon;
 
 class FacilityController extends Controller
@@ -141,6 +142,27 @@ class FacilityController extends Controller
             $nightRate = $facility->night_rate;
         }
 
+        // Check if facility is blocked on this date
+        $block = FacilityBlock::where('facility_id', $id)
+            ->where('start_date', '<=', $request->date)
+            ->where('end_date',   '>=', $request->date)
+            ->first();
+
+        if ($block) {
+            return response()->json([
+                'facility_id'  => (int) $id,
+                'date'         => $request->date,
+                'session'      => $request->session,
+                'booked_slots' => [],
+                'locked_slots' => [],
+                'blocked'      => true,
+                'block_reason' => $block->reason,
+                'day_type'     => $dayType,
+                'day_rate'     => $dayRate,
+                'night_rate'   => $nightRate,
+            ]);
+        }
+
         // Get locked slots (being processed by other users)
         SlotLock::where('expires_at', '<', Carbon::now())->delete();
         
@@ -166,6 +188,8 @@ class FacilityController extends Controller
             'session'      => $request->session,
             'booked_slots' => $bookedSlots,
             'locked_slots' => $lockedSlots,
+            'blocked'      => false,
+            'block_reason' => null,
             'day_type'     => $dayType,
             'day_rate'     => $dayRate,
             'night_rate'   => $nightRate,

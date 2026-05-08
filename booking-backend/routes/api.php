@@ -11,6 +11,10 @@ use App\Http\Controllers\ForgotPasswordController;
 
 use App\Http\Controllers\SlotLockController;
 
+use App\Http\Controllers\FacilityBlockController;
+
+Route::get('/facility-blocks', [FacilityBlockController::class, 'check']);
+
 // ── Public routes ────────────────────────────────────────────────────────────
 Route::post('/register',         [AuthController::class, 'register']);
 Route::post('/login',            [AuthController::class, 'login']);
@@ -60,6 +64,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/holidays',             [HolidayController::class, 'store']);
         Route::post('/admin/holidays/generate/{year}', [HolidayController::class, 'generate']);
         Route::delete('/admin/holidays/{id}',      [HolidayController::class, 'destroy']);
+
+        // Facility blocks (tournament/maintenance)
+        Route::get('/admin/facility-blocks',       [FacilityBlockController::class, 'index']);
+        Route::post('/admin/facility-blocks',      [FacilityBlockController::class, 'store']);
+        Route::delete('/admin/facility-blocks/{id}', [FacilityBlockController::class, 'destroy']);
 
         // Admin – facility management
         Route::get('/admin/facilities',             [FacilityController::class, 'adminIndex']);

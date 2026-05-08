@@ -5,6 +5,7 @@ import {
   adminAllUsers, adminDeleteUser, adminChangeRole,
   adminToggleFacility, getFacilities, adminGetAllFacilities,
   adminGetHolidays, adminAddHoliday, adminDeleteHoliday, adminGenerateHolidays,
+  adminGetFacilityBlocks, adminAddFacilityBlock, adminDeleteFacilityBlock,
   isLoggedIn, getRole,
 } from "../api";
 
@@ -56,6 +57,9 @@ export default function AdminDashboard() {
   const [users,      setUsers]      = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [holidays,   setHolidays]   = useState([]);
+  const [blocks,     setBlocks]     = useState([]);
+  const [blockForm,  setBlockForm]  = useState({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
+  const [blockSaving, setBlockSaving] = useState(false);
   const [period,     setPeriod]     = useState('all');
   const [newHoliday, setNewHoliday] = useState({ date:"", name:"" });
   const [loading,    setLoading]    = useState(true);
@@ -79,14 +83,15 @@ export default function AdminDashboard() {
   const loadAll = async (p = period) => {
     setLoading(true);
     try {
-      const [s, b, u, f, h] = await Promise.all([
-        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(),
+      const [s, b, u, f, h, bl] = await Promise.all([
+        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(), adminGetFacilityBlocks(), adminGetFacilityBlocks(),
       ]);
       setStats(s);
       setBookings(b.bookings || []);
       setUsers(u.users || []);
       setFacilities(f.facilities || []);
       setHolidays(h.holidays || []);
+      setBlocks(bl.blocks || []);
     } catch (e) {
       showToast("Failed to load data");
     } finally {
@@ -228,7 +233,7 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div style={S.tabRow} className="admin-tabs">
-          {[["bookings","📋 Bookings"],["users","👤 Users"],["facilities","🏟️ Facilities"],["holidays","🎉 Holidays"]].map(([k,l]) => (
+          {[["bookings","📋 Bookings"],["users","👤 Users"],["facilities","🏟️ Facilities"],["holidays","🎉 Holidays"],["blocks","🚫 Block Dates"]].map(([k,l]) => (
             <button key={k} style={S.tab(tab===k)} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
@@ -449,6 +454,85 @@ export default function AdminDashboard() {
                           </td>
                           <td style={S.td}>
                             <button style={S.btnDanger} onClick={() => handleDeleteHoliday(h.id, h.name)}>Delete</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table></div>
+                )}
+              </>
+            )}
+
+            {/* ── BLOCK DATES TAB ── */}
+            {tab === "blocks" && (
+              <>
+                <div style={S.sectionTitle}>Block Facility Dates</div>
+                <div style={{ background:"#fff9f9", border:"1px solid #fecaca", borderRadius:12, padding:"20px 24px", marginBottom:24 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#dc2626", marginBottom:16 }}>🚫 Block a Facility (Tournament / Maintenance / Private Event)</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr auto", gap:12, alignItems:"end" }}>
+                    <div>
+                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Facility</div>
+                      <select style={{ ...S.input, width:"100%" }} value={blockForm.facility_id} onChange={e => setBlockForm(f => ({ ...f, facility_id: e.target.value }))}>
+                        <option value="">Select facility</option>
+                        {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Start Date</div>
+                      <input type="date" style={{ ...S.input, width:"100%" }} value={blockForm.start_date} onChange={e => setBlockForm(f => ({ ...f, start_date: e.target.value }))} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>End Date</div>
+                      <input type="date" style={{ ...S.input, width:"100%" }} value={blockForm.end_date} onChange={e => setBlockForm(f => ({ ...f, end_date: e.target.value }))} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:12, color:"#6b7280", marginBottom:4 }}>Reason</div>
+                      <select style={{ ...S.input, width:"100%" }} value={blockForm.reason} onChange={e => setBlockForm(f => ({ ...f, reason: e.target.value }))}>
+                        <option value="Tournament">Tournament</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Private Event">Private Event</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <button style={{ ...S.btnDanger, height:38, whiteSpace:"nowrap" }} disabled={blockSaving} onClick={async () => {
+                      if (!blockForm.facility_id || !blockForm.start_date || !blockForm.end_date) { alert("Please fill all fields."); return; }
+                      setBlockSaving(true);
+                      try {
+                        await adminAddFacilityBlock({ ...blockForm, facility_id: parseInt(blockForm.facility_id) });
+                        const bl = await adminGetFacilityBlocks();
+                        setBlocks(bl.blocks || []);
+                        setBlockForm({ facility_id:"", start_date:"", end_date:"", reason:"Tournament" });
+                      } catch(e) { alert(e.message); }
+                      finally { setBlockSaving(false); }
+                    }}>
+                      {blockSaving ? "Blocking..." : "Block Dates"}
+                    </button>
+                  </div>
+                </div>
+
+                {blocks.length === 0 ? (
+                  <div style={S.empty}>No blocked dates.</div>
+                ) : (
+                  <div className="admin-table-wrap"><table style={S.table} className="admin-table">
+                    <thead><tr>{["Facility","Start Date","End Date","Reason","Action"].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {blocks.map(b => (
+                        <tr key={b.id}>
+                          <td style={S.td}>{b.facility}</td>
+                          <td style={S.td}>{b.start_date}</td>
+                          <td style={S.td}>{b.end_date}</td>
+                          <td style={S.td}>
+                            <span style={{ fontSize:11, fontWeight:600, padding:"2px 10px", borderRadius:20, background:"#fef2f2", border:"1px solid #fecaca", color:"#dc2626" }}>
+                              {b.reason}
+                            </span>
+                          </td>
+                          <td style={S.td}>
+                            <button style={S.btnDanger} onClick={async () => {
+                              if (!window.confirm("Remove this block?")) return;
+                              await adminDeleteFacilityBlock(b.id);
+                              const bl = await adminGetFacilityBlocks();
+                              setBlocks(bl.blocks || []);
+                            }}>Remove</button>
                           </td>
                         </tr>
                       ))}

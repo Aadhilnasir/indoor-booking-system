@@ -253,6 +253,8 @@ export default function Booking() {
   const [showPayModal,     setShowPayModal]     = useState(false);
   const [paidAmount,       setPaidAmount]       = useState(500);
   const [lockedSlots,      setLockedSlots]      = useState([]);
+  const [isBlocked,        setIsBlocked]        = useState(false);
+  const [blockReason,      setBlockReason]      = useState("");
   const [lockExpiry,       setLockExpiry]       = useState(null);
   const [timeLeft,         setTimeLeft]         = useState(600);
   const [lockError,        setLockError]        = useState("");
@@ -302,6 +304,8 @@ export default function Booking() {
       const d = await getBookedSlots(facilities[selectedFacility].id, dateISO, session);
       setBookedSlots(d.booked_slots || []);
       setLockedSlots(d.locked_slots || []);
+      setIsBlocked(d.blocked || false);
+      setBlockReason(d.block_reason || "");
       setDayType(d.day_type || "weekday");
       setActiveRate({ day: d.day_rate || 0, night: d.night_rate || 0 });
     } catch (_) {
@@ -675,6 +679,15 @@ export default function Booking() {
 
           {loadingSlots ? (
             <div style={S.loadingBox}>Checking availability...</div>
+          ) : isBlocked ? (
+            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:12, padding:"32px 24px", textAlign:"center", gridColumn:"1/-1" }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>🚫</div>
+              <div style={{ fontSize:16, fontWeight:700, color:"#dc2626", marginBottom:8 }}>Facility Unavailable</div>
+              <div style={{ fontSize:14, color:"#6b7280" }}>This facility is not available on the selected date.</div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#dc2626", marginTop:8, background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"6px 16px", display:"inline-block" }}>
+                Reason: {blockReason}
+              </div>
+            </div>
           ) : (
             <div style={S.slotGrid} className="booking-slot-grid">
               {TIME_SLOTS.map((slotStr, i) => {
