@@ -84,7 +84,7 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const [s, b, u, f, h, bl] = await Promise.all([
-        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(), adminGetFacilityBlocks(), adminGetFacilityBlocks(),
+        adminStats(p), adminAllBookings(), adminAllUsers(), adminGetAllFacilities(), adminGetHolidays(), adminGetFacilityBlocks(),
       ]);
       setStats(s);
       setBookings(b.bookings || []);
