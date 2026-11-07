@@ -529,7 +529,12 @@ export default function Booking() {
     }
   };
 
-  const handleClear = () => { setSelectedFacility(null); setSelectedSlots(new Set()); };
+  const handleClear = () => {
+    // Release this user's slot holds so other users/admin see them as free
+    if (loggedIn && selectedSlots.size > 0) unlockSlots().catch(() => {});
+    setSelectedFacility(null);
+    setSelectedSlots(new Set());
+  };
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const calDays     = buildCalendarDays(calYear, calMonth);
