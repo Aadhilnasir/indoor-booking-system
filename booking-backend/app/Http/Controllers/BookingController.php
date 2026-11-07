@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use App\Models\Booking;
 use App\Models\Facility;
 use App\Models\SlotLock;
@@ -59,6 +61,25 @@ class BookingController extends Controller
         // Validate slots belong to correct session
         $this->validateSlotSession($data['slots'], $data['session']);
 
+        // ── Lock per date so checks + inserts run one request at a time ──────
+        // Prevents two simultaneous requests from both passing the conflict
+        // checks and booking the same slot (also covers linked courts).
+        $lockKey = 'booking:' . Carbon::parse($data['date'])->toDateString();
+
+        try {
+            return Cache::lock($lockKey, 10)->block(5, function () use ($request, $data, $facility) {
+                return $this->storeLocked($request, $data, $facility);
+            });
+        } catch (LockTimeoutException $e) {
+            return response()->json([
+                'message' => 'Another booking is being processed for this date. Please try again.',
+            ], 409);
+        }
+    }
+
+    // Runs inside the per-date booking lock (see store()).
+    private function storeLocked(Request $request, array $data, Facility $facility)
+    {
         // ── CHECK 1: Direct conflict on this facility ─────────────────────────
         if ($this->hasConflict($data['facility_id'], $data['date'], $data['session'], $data['slots'])) {
             return response()->json([
@@ -109,7 +130,7 @@ class BookingController extends Controller
             // Check if any slot is locked by another user
             foreach ($data['slots'] as $slot) {
                 $lock = SlotLock::where('facility_id', $data['facility_id'])
-                    ->where('date', $data['date'])
+                    ->whereDate('date', $data['date'])
                     ->where('session', $data['session'])
                     ->where('slot', $slot)
                     ->where('user_id', '!=', $request->user()->id)
@@ -208,7 +229,7 @@ class BookingController extends Controller
         // Release slot locks after successful booking
         SlotLock::where('user_id', $request->user()->id)
             ->where('facility_id', $data['facility_id'])
-            ->where('date', $data['date'])
+            ->whereDate('date', $data['date'])
             ->delete();
 
         return response()->json([
@@ -261,7 +282,7 @@ class BookingController extends Controller
     private function hasConflict(int $facilityId, string $date, string $session, array $slots, bool $excludeShadow = false): bool
     {
         $query = Booking::where('facility_id', $facilityId)
-            ->where('date', $date)
+            ->whereDate('date', $date)
             ->where('session', $session)
             ->where('status', 'confirmed');
 
